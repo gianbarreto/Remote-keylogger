@@ -118,4 +118,4 @@ if __name__ == "__main__":
             os.remove(file_merge + file)
 
         # Step 3: Wait before next iteration (adjust the time interval as necessary)
-        time.sleep(10)  # Adjust the time interval for the next cycle
+        time.sleep(120)  # Adjust the time interval for the next cycle (in minutes)

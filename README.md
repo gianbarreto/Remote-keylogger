@@ -1,7 +1,7 @@
 # Remote-keylogger
 
 ## Objective  
-The **Remote-keylogger** project was developed for learning purposes only and is not intended for malicious use.
+The **Remote-keylogger** project was developed for learning purposes only and **is not intended for malicious use**.
 
 ## Skills Learned  
 - **Python Programming** – General scripting and automation.
